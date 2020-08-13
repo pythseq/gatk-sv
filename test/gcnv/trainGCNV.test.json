@@ -28,7 +28,7 @@
 
   "TrainGCNV.sv_base_mini_docker": "gatksv/sv-base-mini:b3af2e3",
   "TrainGCNV.condense_counts_docker" : "gatksv/gatk:condensecounts-7396ae99aaab07e29c92b509a6515508fbe68158",
-  "TrainGCNV.gatk_docker" : "broadinstitute/gatk:4.1.2.0",
+  "TrainGCNV.gatk_docker" : "broadinstitute/gatk:4.1.8.1",
   "TrainGCNV.linux_docker" : "ubuntu:18.04",
 
   "TrainGCNV.gcnv_model_learning_rate" : 0.03,

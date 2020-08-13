@@ -33,6 +33,7 @@ workflow GATKSVPipelinePhase1 {
     String linux_docker
     String cnmops_docker
     String gatk_docker
+    String? gcnv_gatk_docker
     String condense_counts_docker
 
     ############################################################
@@ -295,6 +296,7 @@ workflow GATKSVPipelinePhase1 {
       linux_docker=linux_docker,
       cnmops_docker=cnmops_docker,
       gatk_docker=gatk_docker,
+      gcnv_gatk_docker=gcnv_gatk_docker,
       condense_counts_docker=condense_counts_docker,
       runtime_attr_set_sample = runtime_attr_set_sample,
       runtime_attr_shard_baf = runtime_attr_shard_baf,

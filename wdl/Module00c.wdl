@@ -146,6 +146,7 @@ workflow Module00c {
     String linux_docker
     String condense_counts_docker
     String gatk_docker
+    String? gcnv_gatk_docker
     String cnmops_docker
 
     RuntimeAttr? median_cov_runtime_attr        # Memory ignored, use median_cov_mem_gb_per_sample
@@ -347,7 +348,7 @@ workflow Module00c {
       count_entity_ids = samples,
       contig_ploidy_model_tar = contig_ploidy_model_tar,
       gcnv_model_tars = gcnv_model_tars,
-      gatk_docker = gatk_docker,
+      gatk_docker = select_first([gcnv_gatk_docker, gatk_docker]),
       linux_docker = linux_docker,
       sv_base_mini_docker = sv_base_mini_docker,
       gatk4_jar_override = gatk4_jar_override,

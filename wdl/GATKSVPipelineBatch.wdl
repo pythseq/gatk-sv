@@ -68,6 +68,7 @@ workflow GATKSVPipelineBatch {
     String linux_docker
     String cnmops_docker
     String gatk_docker
+    String? gcnv_gatk_docker
     String condense_counts_docker
     String genomes_in_the_cloud_docker
     String samtools_cloud_docker
@@ -179,6 +180,7 @@ workflow GATKSVPipelineBatch {
       linux_docker=linux_docker,
       cnmops_docker=cnmops_docker,
       gatk_docker=gatk_docker,
+      gcnv_gatk_docker=gcnv_gatk_docker,
       condense_counts_docker=condense_counts_docker
   }
 
