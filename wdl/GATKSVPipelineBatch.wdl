@@ -141,7 +141,8 @@ workflow GATKSVPipelineBatch {
       run_ploidy = false,
       sv_pipeline_docker=sv_pipeline_docker,
       sv_pipeline_qc_docker=sv_pipeline_qc_docker,
-      sv_base_mini_docker=sv_base_mini_docker
+      sv_base_mini_docker=sv_base_mini_docker,
+      sv_base_docker=sv_base_docker
   }
 
   call phase1.GATKSVPipelinePhase1 {

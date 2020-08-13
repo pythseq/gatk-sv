@@ -140,6 +140,7 @@ workflow Module00c {
 
     # Runtime parameters
     String sv_base_mini_docker
+    String sv_base_docker
     String sv_pipeline_docker
     String sv_pipeline_qc_docker
     String linux_docker
@@ -198,6 +199,7 @@ workflow Module00c {
       bincov_matrix_samples = ref_panel_samples,
       batch = batch,
       sv_base_mini_docker = sv_base_mini_docker,
+      sv_base_docker = sv_base_docker,
       runtime_attr_override = evidence_merging_bincov_runtime_attr
   }
 

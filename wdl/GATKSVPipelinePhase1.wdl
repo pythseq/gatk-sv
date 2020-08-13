@@ -289,6 +289,7 @@ workflow GATKSVPipelinePhase1 {
       cnmops_large_min_size=cnmops_large_min_size,
       matrix_qc_distance=matrix_qc_distance,
       sv_base_mini_docker=sv_base_mini_docker,
+      sv_base_docker=sv_base_docker,
       sv_pipeline_docker=sv_pipeline_docker,
       sv_pipeline_qc_docker=sv_pipeline_qc_docker,
       linux_docker=linux_docker,
