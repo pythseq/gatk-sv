@@ -156,14 +156,6 @@ workflow CNVGermlineCaseWorkflow {
 
     Array[Array[File]] call_tars_sample_by_shard = transpose(GermlineCNVCallerCaseMode.gcnv_call_tars)
 
-    call CNVTasks.BundlePostprocessingInvariants {
-        input:
-            calls_tars = GermlineCNVCallerCaseMode.gcnv_calls_tar,
-            model_tars = gcnv_model_tars,
-            sv_base_mini_docker = sv_base_mini_docker,
-            runtime_attr_override = runtime_attr_bundle
-    }
-
     scatter (sample_index in range(length(counts))) {
         call CNVTasks.PostprocessGermlineCNVCalls {
             input:
@@ -195,7 +187,7 @@ workflow CNVGermlineCaseWorkflow {
     output {
         File contig_ploidy_calls_tar = DetermineGermlineContigPloidyCaseMode.contig_ploidy_calls_tar
         Array[File] sample_contig_ploidy_calls_tars = ExplodePloidyCalls.sample_contig_ploidy_calls_tar
-        Array[File] gcnv_calls_tars = GermlineCNVCallerCaseMode.gcnv_calls_tar
+        Array[Array[File]] gcnv_calls_tars = GermlineCNVCallerCaseMode.gcnv_call_tars
         Array[File] gcnv_tracking_tars = GermlineCNVCallerCaseMode.gcnv_tracking_tar
         Array[File] genotyped_intervals_vcf = PostprocessGermlineCNVCalls.genotyped_intervals_vcf
         Array[File] genotyped_segments_vcf = PostprocessGermlineCNVCalls.genotyped_segments_vcf
