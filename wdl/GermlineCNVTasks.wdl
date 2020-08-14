@@ -490,7 +490,7 @@ task PostprocessGermlineCNVCalls {
               done
 
 
-        mkdir -p extracted-contig-ploidy-calls
+        mkdir -p contig-ploidy-calls
         tar xzf ~{contig_ploidy_calls_tar} -C contig-ploidy-calls
         rm ~{contig_ploidy_calls_tar}
 
@@ -505,8 +505,6 @@ task PostprocessGermlineCNVCalls {
             --output-genotyped-intervals ~{genotyped_intervals_vcf_filename} \
             --output-genotyped-segments ~{genotyped_segments_vcf_filename} \
             --output-denoised-copy-ratios ~{denoised_copy_ratios_filename}
-
-        rm -Rf extracted-contig-ploidy-calls
     >>>
     runtime {
       cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
