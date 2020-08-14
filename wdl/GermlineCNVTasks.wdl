@@ -484,7 +484,7 @@ task PostprocessGermlineCNVCalls {
 
                 MODEL_DIR="MODEL_$CALL_INDEX"
                 mkdir $MODEL_DIR
-                tar xzf $GCNV_MODEL_TAR -C "$MODEL_DIR
+                tar xzf $GCNV_MODEL_TAR -C "$MODEL_DIR"
                 echo "--model-shard-path $MODEL_DIR" >> calls_and_model_args.txt
                 ((++CALL_INDEX))
               done
