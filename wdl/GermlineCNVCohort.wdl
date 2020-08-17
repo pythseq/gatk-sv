@@ -541,9 +541,13 @@ task GermlineCNVCallerCohortMode {
             --caller-external-admixing-rate ~{default="1.00" caller_external_admixing_rate} \
             --disable-annealing ~{default="false" disable_annealing}
 
-        tar c -C ~{output_dir_}/~{cohort_entity_id}-tracking . | gzip -1 > case-gcnv-tracking-~{scatter_index}.tar.gz
+        tar c -C ~{output_dir_}/~{cohort_entity_id}-tracking . \
+            | gzip -1 \
+            > ~{cohort_entity_id}-gcnv-tracking-shard-~{scatter_index}.tar.gz
         # these will be stored and used repeatedly, so compress them well
-        tar c -C ~{output_dir_}/~{cohort_entity_id}-model  . | gzip -9 > case-gcnv-model-files-~{scatter_index}.tar.gz
+        tar c -C ~{output_dir_}/~{cohort_entity_id}-model  . \
+            | gzip -9 \
+            > ~{cohort_entity_id}-gcnv-model-shard-~{scatter_index}.tar.gz
 
         CURRENT_SAMPLE=0
         NUM_SAMPLES=~{num_samples}
@@ -568,9 +572,9 @@ task GermlineCNVCallerCohortMode {
     }
 
     output {
-        File gcnv_model_tar = "case-gcnv-model-files-~{scatter_index}.tar.gz"
+        File gcnv_model_tar = "~{cohort_entity_id}-gcnv-model-shard-~{scatter_index}.tar.gz"
         Array[File] gcnv_call_tars = glob("~{cohort_entity_id}-gcnv-calls-shard-~{scatter_index}-sample-*.tar.gz")
-        File gcnv_tracking_tar = "case-gcnv-tracking-~{scatter_index}.tar.gz"
+        File gcnv_tracking_tar = "~{cohort_entity_id}-gcnv-tracking-shard-~{scatter_index}.tar.gz"
         File calling_config_json = "~{output_dir_}/~{cohort_entity_id}-calls/calling_config.json"
         File denoising_config_json = "~{output_dir_}/~{cohort_entity_id}-calls/denoising_config.json"
         File gcnvkernel_version_json = "~{output_dir_}/~{cohort_entity_id}-calls/gcnvkernel_version.json"
