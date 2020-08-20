@@ -236,20 +236,15 @@ else
 fi
 
 
-# since getBlockDeviceIO looks at differences in stat file, run the
-# update so the first reported update has a sensible previous result to
-# compare to
-echo "0 0" > $TEMP_IO
-getBlockDeviceIO "$BLOCK_DEVICE_STAT_FILE" > /dev/null
-
-# same thing for getCpuUsage
+# since getCpuUsage looks at differences in stat file, run the update so
+# the first reported update has a sensible previous result to compare to
 echo "0 0" > $TEMP_CPU
 getCpuUsage > /dev/null
 
-# NOTE: need to sleep *before* getting first runtimeInfo, because
-# otherwise there is not enough time to get sensible cpu / read / write
-# info. But we want to get info quickly in case the task ends quickly.
-sleep 0.1
+# same thing for getBlockDeviceIO
+echo "0 0" > $TEMP_IO
+getBlockDeviceIO "$BLOCK_DEVICE_STAT_FILE" > /dev/null
+
 
 while true; do
     runtimeInfo

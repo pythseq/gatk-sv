@@ -2,13 +2,21 @@
 
 function show_help() {
     cat <<-END
-USAGE: get_cromwell_memory_usage2.sh WORKFLOW_ID
-             or
-       get_cromwell_memory_usage2.sh GCS_PATH_TO_WORKFLOW_FOLDER
-             or
-       get_cromwell_memory_usage2.sh LOCAL_PATH_TO_WORKFLOW_FOLDER
+USAGE: get_cromwell_memory_usage2.sh [OPTIONS] WORKFLOW_INFO
 Displays #tasks x #fields table of resource usage info with two
 header lines, and additional column of task descriptions.
+  WORKFLOW_INFO: specifies workflow identity. Can be
+                 a) a cromwell workflow ID
+                 b) a path to workflow output in google cloud (starting with gs://)
+                 c) a local path to workflow output
+  OPTIONS:
+    -r --raw-output
+      If set, output data as tab-separated table. Otherwise pass data through column -t for
+      easier reading.
+    -o --output-file OUTPUT_FILE_NAME
+      If specified, write output to file instead of stdout. Note that all non-tabular output is
+      sent to stderr, so this is just syntactic sugar for file redirection.
+
 -This script works by finding all the logs, sorting them into sensible
  order, and chopping up their paths to make a description column. If
  any jobs have not completed they will simply be omitted. The script
@@ -33,18 +41,37 @@ if [[ $# == 0 ]]; then
     show_help
     exit 0
 fi
+RAW_OUTPUT=false
+OUTPUT_FILE="/dev/stdout"
+WORKFLOW_INFO=""
 for ((i=1; i<=$#; ++i)); do
     if [[ ${!i} =~ -+(h|help) ]]; then
         show_help
         exit 0
+    elif [[ ${!i} =~ -+(r|raw-output) ]]; then
+        RAW_OUTPUT=true
+    elif [[ ${!i} =~ -+(o|output-file) ]]; then
+        ((++i))
+        OUTPUT_FILE="${!i}"
+    elif [[ ${!i} =~ -.* ]]; then
+        1>&2 echo "Unknown option ${!i}"
+        show_help
+        exit 1
+    elif [[ -z "$WORKFLOW_INFO" ]]; then
+        WORKFLOW_INFO=${!i}
+    else
+        1>&2 echo "Too many arguments"
+        show_help
+        exit 1
     fi
 done
+
+1>&2 echo "RAW_OUTPUT=$RAW_OUTPUT"
 
 set -Eeu -o pipefail
 
 CROMSHELL=${CROMSHELL:-"cromshell"}
 
-WORKFLOW_INFO="$1"
 REMOTE=true
 if [[ $WORKFLOW_INFO == "gs://"* ]]; then
     WORKFLOW_DIR="$WORKFLOW_INFO"
@@ -160,6 +187,9 @@ function get_task_peak_resource_usage() {
         cat "$LOG_FILE"
     fi \
         | awk '
+            function handle_nan(num) {
+               return num < 0 ? "nan" : num
+            }
             BEGIN {
                 NEED_HEADER=2
             }
@@ -173,30 +203,63 @@ function get_task_peak_resource_usage() {
             }
             NEED_HEADER>0 {
                 if(NEED_HEADER==2) {
-                    if($1 == "ElapsedTime") {
-                        PEAK_VALUE[1] = 0.0
+                    if($1" "$2 == "Num processors:") {
+                        TOT["CPU"] = $3
+                        TOT_NAME["CPU"] = "nCPU"
+                        TOT_UNIT["CPU"] = "#"
+                    }
+                    else if($1" "$2 == "Total Memory:") {
+                        TOT["Mem"] = $3
+                        TOT_NAME["Mem"] = "TotMem"
+                        TOT_UNIT["Mem"] = $4
+                    }
+                    else if($1" "$2 == "Total Disk") {
+                        TOT["Disk"] = $4
+                        TOT_NAME["Disk"] = "TotDisk"
+                        TOT_UNIT["Disk"] = $5
+                    }
+                    else if($1 == "ElapsedTime") {
+                        # this is the first header line
+                        # for summary purposes, augment instantaneous
+                        # usage with total VM stats
+                        PEAK_VALUE[1] = "00:00:00"
+                        HEADER_NAME[1] = $1
+                        printf "%s", $1
                         for(i=2; i<=NF; ++i) {
                             PEAK_VALUE[i] = -1.0
+                            HEADER_NAME[i] = $i
+                            if($i in TOT_NAME) {
+                              printf "\t%s", TOT_NAME[$i]
+                              delete TOT_NAME[$i]
+                            }
+                            printf "\t%s", $i
                         }
-                        print $0
+                        printf "\n"
                         --NEED_HEADER
                     }
                 } else {
-                    print $0
+                    printf "%s", $1
+                    for(i=2; i<=NF; ++i) {
+                        NAME_i = HEADER_NAME[i]
+                        if(NAME_i in TOT_UNIT) {
+                            printf "\t%s", TOT_UNIT[NAME_i]
+                            delete TOT_UNIT[NAME_i]
+                        }
+                        printf "\t%s", $i
+                    }
+                    printf "\n"
                     --NEED_HEADER
                 }
             }
             END {
-                for(i=1; i<=length(PEAK_VALUE); ++i) {
-                    v = PEAK_VALUE[i]
-                    if(v < 0.0) {
-                        v = "nan"
+                printf "%s", handle_nan(PEAK_VALUE[1])
+                for(i=2; i<=length(PEAK_VALUE); ++i) {
+                    NAME_i = HEADER_NAME[i]
+                    if(NAME_i in TOT) {
+                        printf "\t%s", handle_nan(TOT[NAME_i])
+                        delete TOT[NAME_i]
                     }
-                    if(i == 1) {
-                      printf "%s", v
-                    } else {
-                      printf "\t%s", v
-                    }
+                    printf "\t%s", handle_nan(PEAK_VALUE[i])
                 }
                 printf "\n"
             }
@@ -269,4 +332,8 @@ function get_workflow_peak_resource_usage() {
     fi
 }
 
-get_workflow_peak_resource_usage "$WORKFLOW_DIR" $REMOTE
+if $RAW_OUTPUT; then
+  get_workflow_peak_resource_usage "$WORKFLOW_DIR" $REMOTE
+else
+  get_workflow_peak_resource_usage "$WORKFLOW_DIR" $REMOTE | column -t
+fi > "$OUTPUT_FILE"
