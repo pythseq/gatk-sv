@@ -61,19 +61,20 @@ for ((i=1; i<=$#; ++i)); do
         WORKFLOW_INFO=${!i}
     else
         1>&2 echo "Too many arguments"
-        show_help
         exit 1
     fi
 done
-
-1>&2 echo "RAW_OUTPUT=$RAW_OUTPUT"
 
 set -Eeu -o pipefail
 
 CROMSHELL=${CROMSHELL:-"cromshell"}
 
 REMOTE=true
-if [[ $WORKFLOW_INFO == "gs://"* ]]; then
+if [[ -z "$WORKFLOW_INFO" ]]; then
+    1>&2 echo "No WORKFLOW_INFO provided"
+    show_help
+    exit 1
+elif [[ $WORKFLOW_INFO == "gs://"* ]]; then
     # workflow info is a cloud file, strip trailing slashes (must use sed because OSX uses old bash)
     WORKFLOW_DIR=$(echo "$WORKFLOW_INFO" | sed 's,/*$,,g')
 elif [[ -d "$WORKFLOW_INFO" ]]; then
@@ -97,6 +98,7 @@ else
     )
 fi
 1>&2 echo "WORKFLOW_DIR=$WORKFLOW_DIR"
+1>&2 echo "RAW_OUTPUT=$RAW_OUTPUT"
 
 function get_monitor_logs() {
     TOP_DIR=$1
