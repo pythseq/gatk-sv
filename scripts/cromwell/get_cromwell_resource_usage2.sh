@@ -74,10 +74,11 @@ CROMSHELL=${CROMSHELL:-"cromshell"}
 
 REMOTE=true
 if [[ $WORKFLOW_INFO == "gs://"* ]]; then
-    WORKFLOW_DIR="$WORKFLOW_INFO"
+    # workflow info is a cloud file, strip trailing slashes (must use sed because OSX uses old bash)
+    WORKFLOW_DIR=$(echo "$WORKFLOW_INFO" | sed 's,/*$,,g')
 elif [[ -d "$WORKFLOW_INFO" ]]; then
-    # workflow info is a local file
-    WORKFLOW_DIR="$WORKFLOW_INFO"
+    # workflow info is a local file, strip trailing slashes (must use sed because OSX uses old bash)
+    WORKFLOW_DIR=$(echo "$WORKFLOW_INFO" | sed 's,/*$,,g')
     REMOTE=false
 else
     WORKFLOW_ID="$WORKFLOW_INFO"
