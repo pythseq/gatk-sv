@@ -45,15 +45,15 @@ RAW_OUTPUT=false
 OUTPUT_FILE="/dev/stdout"
 WORKFLOW_INFO=""
 for ((i=1; i<=$#; ++i)); do
-    if [[ ${!i} =~ -+(h|help) ]]; then
+    if [[ ${!i} =~ ^-+(h|help) ]]; then
         show_help
         exit 0
-    elif [[ ${!i} =~ -+(r|raw-output) ]]; then
+    elif [[ ${!i} =~ ^-+(r|raw-output) ]]; then
         RAW_OUTPUT=true
-    elif [[ ${!i} =~ -+(o|output-file) ]]; then
+    elif [[ ${!i} =~ ^-+(o|output-file) ]]; then
         ((++i))
         OUTPUT_FILE="${!i}"
-    elif [[ ${!i} =~ -.* ]]; then
+    elif [[ ${!i} =~ ^-.* ]]; then
         1>&2 echo "Unknown option ${!i}"
         show_help
         exit 1
