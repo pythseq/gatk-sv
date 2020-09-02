@@ -212,7 +212,7 @@ echo Total Memory: $(getMem MemTotal)
 echo Total Disk space: $(getDisk Size "$MONITOR_MOUNT_POINT") GiB
 echo Start time: $(date "+%F %T %z" -d @$T_START)
 echo --- Runtime Information ---
-echo -e "ElapsedTime\tCPU\tMem\tMem\tDisk\tDisk\tIORead\tIOWrite"
+echo -e "ElapsedTime\tCPU\tMem\tMemPct\tDisk\tDiskPct\tIORead\tIOWrite"
 echo -e "HH:MM:SS   \t%\tGiB\t%\tGiB\t%\tMiB/s\tMiB/s"
 
 # make a temp file to store io information, remove it on exit

@@ -5,17 +5,19 @@ function show_help() {
 USAGE: get_cromwell_memory_usage2.sh [OPTIONS] WORKFLOW_INFO
 Displays #tasks x #fields table of resource usage info with two
 header lines, and additional column of task descriptions.
-  WORKFLOW_INFO: specifies workflow identity. Can be
-                 a) a cromwell workflow ID
-                 b) a path to workflow output in google cloud (starting with gs://)
-                 c) a local path to workflow output
-  OPTIONS:
-    -r --raw-output
-      If set, output data as tab-separated table. Otherwise pass data through column -t for
-      easier reading.
-    -o --output-file OUTPUT_FILE_NAME
-      If specified, write output to file instead of stdout. Note that all non-tabular output is
-      sent to stderr, so this is just syntactic sugar for file redirection.
+    WORKFLOW_INFO: specifies workflow identity. Can be
+                   a) a cromwell workflow ID
+                   b) a path to workflow output in google cloud (starting with gs://)
+                   c) a local path to workflow output
+    OPTIONS:
+        -r --raw-output
+            If set, output data as tab-separated table. Otherwise pass data through column -t for
+            easier reading.
+        -u --hide-units
+            If set, don't show second header line with units.
+        -o --output-file OUTPUT_FILE_NAME
+            If specified, write output to file instead of stdout. Note that all non-tabular output is
+            sent to stderr, so this is just syntactic sugar for file redirection.
 
 -This script works by finding all the logs, sorting them into sensible
  order, and chopping up their paths to make a description column. If
@@ -42,6 +44,7 @@ if [[ $# == 0 ]]; then
     exit 0
 fi
 RAW_OUTPUT=false
+SHOW_UNITS=true
 OUTPUT_FILE="/dev/stdout"
 WORKFLOW_INFO=""
 for ((i=1; i<=$#; ++i)); do
@@ -50,6 +53,8 @@ for ((i=1; i<=$#; ++i)); do
         exit 0
     elif [[ ${!i} =~ ^-+(r|raw-output) ]]; then
         RAW_OUTPUT=true
+    elif [[ ${!i} =~ ^-+(u|hide-units) ]]; then
+        SHOW_UNITS=false
     elif [[ ${!i} =~ ^-+(o|output-file) ]]; then
         ((++i))
         OUTPUT_FILE="${!i}"
@@ -64,6 +69,7 @@ for ((i=1; i<=$#; ++i)); do
         exit 1
     fi
 done
+export SHOW_UNITS
 
 set -Eeu -o pipefail
 
@@ -98,7 +104,9 @@ else
     )
 fi
 1>&2 echo "WORKFLOW_DIR=$WORKFLOW_DIR"
-1>&2 echo "RAW_OUTPUT=$RAW_OUTPUT"
+#1>&2 echo "RAW_OUTPUT=$RAW_OUTPUT"
+#1>&2 echo "SHOW_UNITS=$SHOW_UNITS"
+
 
 function get_monitor_logs() {
     TOP_DIR=$1
@@ -135,17 +143,19 @@ function get_task_sort_key() {
         | tr / '\n' \
         | tail -n+$N_START \
         | awk -v FS='-' \
-              -v SHARD_FORMAT="$SHARD_FORMAT" ' {
-            if($1 == "shard") {
-                SHARD_KEY=sprintf("%s/" SHARD_FORMAT, SHARD_KEY, $2)
-            } else if($1 == "call") {
-                CALL_KEY=sprintf("%s/%s", CALL_KEY, $2)
-            } else if($1 == "attempt") {
-                ATTEMPT_NUMBER=$2
+              -v SHARD_FORMAT="$SHARD_FORMAT" '
+            {
+                if($1 == "shard") {
+                    SHARD_KEY=sprintf("%s/" SHARD_FORMAT, SHARD_KEY, $2)
+                } else if($1 == "call") {
+                    CALL_KEY=sprintf("%s/%s", CALL_KEY, $2)
+                } else if($1 == "attempt") {
+                    ATTEMPT_NUMBER=$2
+                }
             }
-          } END {
-            printf SHARD_FORMAT "\t%s/%s", ATTEMPT_NUMBER, CALL_KEY, SHARD_KEY
-          }'
+            END {
+              printf SHARD_FORMAT "\t%s/%s", ATTEMPT_NUMBER, CALL_KEY, SHARD_KEY
+            }'
 }
 
 
@@ -302,7 +312,9 @@ function get_task_columns() {
         # due to OSX having an ancient version of bash, this produces syntax errors:
         # paste <(echo "$RESOURCE_USAGE" | head -n2) <(echo "task")
         printf "%s\ttask\n" "$(echo "$RESOURCE_USAGE" | head -n1)"
-        echo "$RESOURCE_USAGE" | tail -n2 | head -n1
+        if $SHOW_UNITS; then
+          echo "$RESOURCE_USAGE" | tail -n2 | head -n1
+        fi
     fi
     printf "%s\t%s\n" "$(echo "$RESOURCE_USAGE" | tail -n1)" "$DESCRIPTION"
 }
@@ -336,7 +348,7 @@ function get_workflow_peak_resource_usage() {
 }
 
 if $RAW_OUTPUT; then
-  get_workflow_peak_resource_usage "$WORKFLOW_DIR" $REMOTE
+    get_workflow_peak_resource_usage "$WORKFLOW_DIR" $REMOTE
 else
-  get_workflow_peak_resource_usage "$WORKFLOW_DIR" $REMOTE | column -t
+    get_workflow_peak_resource_usage "$WORKFLOW_DIR" $REMOTE | column -t
 fi > "$OUTPUT_FILE"
