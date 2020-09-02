@@ -362,9 +362,11 @@ task GermlineCNVCallerCaseMode {
         tar xzf ~{gcnv_model_tar} -C gcnv-model
 
         read_count_files_list=~{write_lines(read_count_files)}
-        grep gz$ $read_count_files_list | xargs -l1 -P0 gunzip
-        sed 's/\.gz$//' $read_count_files_list | \
-            awk '{print "--input "$0}' > read_count_files.args
+        grep gz$ "$read_count_files_list" | xargs -l1 -P0 gunzip
+        sed 's/\.gz$//' $read_count_files_list \
+            | shuf --random-source=/dev/urandom \
+            | awk '{print "--input "$0}' \
+            > read_count_files.args
 
         gatk --java-options "-Xmx~{command_mem_mb}m"  GermlineCNVCaller \
             --run-mode CASE \
@@ -405,14 +407,28 @@ task GermlineCNVCallerCaseMode {
 
         tar c -C ~{output_dir_}/case-tracking . | gzip -1 > case-gcnv-tracking-~{scatter_index}.tar.gz
 
-        CURRENT_SAMPLE=0
+        # tar output calls, ensuring output files are numbered in the same order as sample list
         NUM_SAMPLES=~{num_samples}
         NUM_DIGITS=${#NUM_SAMPLES}
-        while [ $CURRENT_SAMPLE -lt $NUM_SAMPLES ]; do
-            CURRENT_SAMPLE_WITH_LEADING_ZEROS=$(printf "%0${NUM_DIGITS}d" $CURRENT_SAMPLE)
-            tar czf case-gcnv-calls-shard-~{scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS.tar.gz -C ~{output_dir_}/case-calls/SAMPLE_$CURRENT_SAMPLE .
-            ((++CURRENT_SAMPLE))
-        done
+        while read READ_COUNT_FILE; do
+          SAMPLE_NAME=$(zgrep "^@RG" "$READ_COUNT_FILE" | cut -d: -f3)
+          SAMPLE_PATH=$(dirname $(grep -lR -m1 "^$SAMPLE_NAME$" "~{output_dir_}/case-calls"))
+          CURRENT_SAMPLE=$(basename "$SAMPLE_PATH" | cut -d_ -f2)
+          CURRENT_SAMPLE_WITH_LEADING_ZEROS=$(printf "%0${NUM_DIGITS}d" $CURRENT_SAMPLE)
+          tar czf case-gcnv-calls-shard-~{scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS.tar.gz \
+                -C "$SAMPLE_PATH" .
+        done < "$read_count_files_list"
+
+
+#        CURRENT_SAMPLE=0
+#        NUM_SAMPLES=~{num_samples}
+#        NUM_DIGITS=${#NUM_SAMPLES}
+#        while [ $CURRENT_SAMPLE -lt $NUM_SAMPLES ]; do
+#            CURRENT_SAMPLE_WITH_LEADING_ZEROS=$(printf "%0${NUM_DIGITS}d" $CURRENT_SAMPLE)
+#            tar czf case-gcnv-calls-shard-~{scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS.tar.gz \
+#                -C ~{output_dir_}/case-calls/SAMPLE_$CURRENT_SAMPLE .
+#            ((++CURRENT_SAMPLE))
+#        done
     >>>
     runtime {
       cpu: select_first([runtime_attr.cpu_cores, default_attr.cpu_cores])
