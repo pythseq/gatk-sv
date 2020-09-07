@@ -410,14 +410,15 @@ task GermlineCNVCallerCaseMode {
         # tar output calls, ensuring output files are numbered in the same order as sample list
         NUM_SAMPLES=~{num_samples}
         NUM_DIGITS=${#NUM_SAMPLES}
+        CURRENT_SAMPLE=0
         sed 's/\.gz$//' "$read_count_files_list" \
             | while read READ_COUNT_FILE; do
                 SAMPLE_NAME=$(zgrep "^@RG" "$READ_COUNT_FILE" | cut -d: -f3)
                 SAMPLE_PATH=$(dirname $(grep -lR -m1 "^$SAMPLE_NAME$" "~{output_dir_}/case-calls"))
-                CURRENT_SAMPLE=$(basename "$SAMPLE_PATH" | cut -d_ -f2)
                 CURRENT_SAMPLE_WITH_LEADING_ZEROS=$(printf "%0${NUM_DIGITS}d" $CURRENT_SAMPLE)
                 tar czf case-gcnv-calls-shard-~{scatter_index}-sample-$CURRENT_SAMPLE_WITH_LEADING_ZEROS.tar.gz \
                     -C "$SAMPLE_PATH" .
+                ((++CURRENT_SAMPLE))
             done
     >>>
     runtime {

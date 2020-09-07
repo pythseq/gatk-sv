@@ -497,7 +497,7 @@ task PostprocessGermlineCNVCalls {
         allosomal_contigs_args="--allosomal-contig ~{sep=" --allosomal-contig " allosomal_contigs}"
 
         time gatk --java-options "-Xmx~{command_mem_mb}m" PostprocessGermlineCNVCalls \
-             --arguments_file calls_and_model_args.txt \
+            --arguments_file calls_and_model_args.txt \
             ~{true="$allosomal_contigs_args" false="" allosomal_contigs_specified} \
             --autosomal-ref-copy-number ~{ref_copy_number_autosomal_contigs} \
             --contig-ploidy-calls contig-ploidy-calls \
